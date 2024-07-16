@@ -1249,18 +1249,44 @@ void update_mario_joystick_inputs(struct MarioState *m) {
     struct Controller *controller = m->controller;
     f32 mag = ((controller->stickMag / 64.0f) * (controller->stickMag / 64.0f)) * 64.0f;
 
+    #define DPAD_MASK (L_JPAD | R_JPAD)
+
+    if(controller->buttonDown & DPAD_MASK) mag = 64;
+
     if (m->squishTimer == 0) {
         m->intendedMag = mag / 2.0f;
     } else {
         m->intendedMag = mag / 8.0f;
     }
 
-    if (m->intendedMag > 0.0f) {
-        m->intendedYaw = atan2s(-controller->stickY, controller->stickX) + m->area->camera->yaw;
-        m->input |= INPUT_NONZERO_ANALOG;
+    print_text_fmt_int(20, 40, "%d", mag);
+
+    if (gMarioState->_2D) {
+
+        if((controller->stickY != 0.f) && (controller->stickX == 0.0f)){
+            m->intendedMag = 0;
+        }
+
+        if (m->intendedMag > 0.0f) {
+            if ((controller->stickX > 0.0f) | (controller->buttonDown & R_JPAD)) {
+                m->intendedYaw = 0x4000;
+            }
+            if ((controller->stickX < 0.0f) | (controller->buttonDown & L_JPAD)) {
+                m->intendedYaw = -0x4000;
+            }
+            m->input |= INPUT_NONZERO_ANALOG;
+        } else {
+            m->intendedYaw = m->faceAngle[1];
+        }
     } else {
-        m->intendedYaw = m->faceAngle[1];
+        if (m->intendedMag > 0.0f) {
+            m->intendedYaw = atan2s(-controller->stickY, controller->stickX) + m->area->camera->yaw;
+            m->input |= INPUT_NONZERO_ANALOG;
+        } else {
+            m->intendedYaw = m->faceAngle[1];
+        }
     }
+
 }
 
 /**

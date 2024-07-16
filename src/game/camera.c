@@ -424,6 +424,7 @@ s32 update_boss_fight_camera(struct Camera *c, Vec3f focus, Vec3f pos);
 s32 update_parallel_tracking_camera(struct Camera *c, Vec3f focus, Vec3f pos);
 s32 update_fixed_camera(struct Camera *c, Vec3f focus, Vec3f pos);
 s32 update_8_directions_camera(struct Camera *c, Vec3f focus, Vec3f pos);
+s32 update_2d_camera(struct Camera *c, Vec3f focus, Vec3f pos);
 s32 update_slide_or_0f_camera(struct Camera *c, Vec3f focus, Vec3f pos);
 s32 update_spiral_stairs_camera(struct Camera *c, Vec3f focus, Vec3f pos);
 
@@ -444,6 +445,7 @@ CameraTransition sModeTransitions[] = {
     update_parallel_tracking_camera,
     update_fixed_camera,
     update_8_directions_camera,
+    update_2d_camera,
     update_slide_or_0f_camera,
     update_mario_camera,
     update_spiral_stairs_camera
@@ -677,6 +679,21 @@ void focus_on_mario(Vec3f focus, Vec3f pos, f32 posYOff, f32 focYOff, f32 dist, 
     marioPos[2] = sMarioCamState->pos[2];
 
     vec3f_set_dist_and_angle(marioPos, pos, dist, pitch + sLakituPitch, yaw);
+
+    focus[0] = sMarioCamState->pos[0];
+    focus[1] = sMarioCamState->pos[1] + focYOff;
+    focus[2] = sMarioCamState->pos[2];
+}
+
+//custom function to ignore camera angles, probably going to need work for vertical level reasons or more dynamic level design stuff
+void focus_on_center_of_screen(Vec3f focus, Vec3f pos, f32 posYOff, f32 focYOff, f32 dist, s16 pitch, s16 yaw) {
+    Vec3f marioPos;
+
+    marioPos[0] = sMarioCamState->pos[0];
+    marioPos[1] = sMarioCamState->pos[1] + posYOff;
+    marioPos[2] = sMarioCamState->pos[2];
+
+    vec3f_set_dist_and_angle(marioPos, pos, dist, 0, 0);
 
     focus[0] = sMarioCamState->pos[0];
     focus[1] = sMarioCamState->pos[1] + focYOff;
@@ -2774,6 +2791,18 @@ void set_camera_mode(struct Camera *c, s16 mode, s16 frames) {
 #endif
 }
 
+//shoutouts to my boy rovert
+
+f32 _2D_Camera_X;
+f32 _2D_Camera_Offset_X;
+f32 _2D_Camera_Offset_Target_X;
+f32 _2D_Camera_Y;
+f32 _2D_Camera_Y_Target;
+u8 TrackMario = FALSE;
+
+Vec3f _2D_Hold_Pos;
+Vec3f _2D_Hold_Foc;
+
 /**
  * Updates Lakitu's position/focus and applies camera shakes.
  */
@@ -2845,6 +2874,10 @@ void update_lakitu(struct Camera *c) {
         gLakituState.roll += sHandheldShakeRoll;
         gLakituState.roll += gLakituState.keyDanceRoll;
 
+        if (gMarioState->_2D) {
+            gLakituState.roll = 0;
+        }
+
         if (c->mode != CAMERA_MODE_C_UP && c->cutscene == CUTSCENE_NONE) {
             gCollisionFlags |= COLLISION_FLAG_CAMERA;
             distToFloor = find_floor(gLakituState.pos[0],
@@ -2864,6 +2897,97 @@ void update_lakitu(struct Camera *c) {
     clamp_pitch(gLakituState.pos, gLakituState.focus, 0x3E00, -0x3E00);
     gLakituState.mode = c->mode;
     gLakituState.defMode = c->defMode;
+
+    if (c->cutscene == 0) {
+        vec3f_copy(_2D_Hold_Pos, gLakituState.pos);
+        vec3f_copy(_2D_Hold_Foc, gLakituState.focus);
+    }
+
+    if (gMarioState->_2D) {
+        vec3f_copy(gLakituState.pos, c->pos);
+        vec3f_copy(gLakituState.focus, c->focus);
+        
+        if (c->cutscene != 0) {
+            vec3f_copy(gLakituState.pos, _2D_Hold_Pos);
+            vec3f_copy(gLakituState.focus, _2D_Hold_Foc);    
+            }
+        }
+}
+
+/*
+so what we need is a camera that ignores angles and only cares about position to match how it works in new soup
+
+I will need to do some sort of a boundaries system and probably splines, but for now, it's more important that a camera is looking where we want it
+*/
+
+//bit of a bandaid for now, we'll see where this ends up going
+s32 update_2d_camera(struct Camera *c, Vec3f focus, Vec3f pos) {
+    s16 camYaw = s8DirModeBaseYaw + s8DirModeYawOffset;
+    s16 pitch = 0;
+    f32 posY;
+    f32 focusY;
+    f32 yOff = 0.f;
+    f32 baseDist = 1000.f;
+
+    sAreaYaw = camYaw;
+    calc_y_to_curr_floor(&posY, 1.f, 200.f, &focusY, 0.9f, 200.f);
+    focus_on_center_of_screen(focus, pos, posY + yOff, focusY + yOff, sLakituDist + baseDist, pitch, camYaw);
+    return camYaw;
+}
+
+/**
+ * copying rovert's homework, probably gonna bite me in the ass later.
+ */
+void mode_2d_camera(struct Camera *c) {
+
+    c->pos[0] = _2D_Camera_X+_2D_Camera_Offset_X;
+    c->focus[0] = _2D_Camera_X+_2D_Camera_Offset_X;
+    _2D_Camera_Offset_X = approach_f32_asymptotic(_2D_Camera_Offset_X, _2D_Camera_Offset_Target_X, 0.1f);
+    c->pos[1] = _2D_Camera_Y;
+    c->focus[1] = _2D_Camera_Y;
+    _2D_Camera_Y = approach_f32_asymptotic(_2D_Camera_Y, _2D_Camera_Y_Target, 0.2f);
+
+    //ingenious camera logic
+    if (gMarioState->pos[0] > _2D_Camera_X+100.0f){
+        _2D_Camera_X = gMarioState->pos[0]-100.0f;
+        _2D_Camera_Offset_Target_X = 150.0f;
+    }
+    if (gMarioState->pos[0] < _2D_Camera_X-100.0f){
+        _2D_Camera_X = gMarioState->pos[0]+100.0f;
+        _2D_Camera_Offset_Target_X = -150.0f;
+    }
+
+    if (TrackMario) {
+        _2D_Camera_Y_Target = gMarioState->pos[1];
+    }
+    if (gMarioState->pos[1] > gMarioState->floorHeight+500.0f) {
+        TrackMario = TRUE;
+    }
+    if (gMarioState->floorHeight == gMarioState->pos[1]) {
+        _2D_Camera_Y_Target = gMarioState->pos[1]+100.0f;
+        TrackMario = FALSE;
+    }
+    
+    c->pos[2] = gMarioState->pos[2]+500.0f;
+    c->focus[2] = gMarioState->pos[2];
+
+    /*if (gPlayer1Controller->buttonPressed & R_TRIG) {
+        gMarioState->_2D_Setting = (gMarioState->_2D_Setting+1)%3;
+        play_sound_rbutton_changed();
+    }
+
+    if (c->pos[1] - (gMarioState->_2D_FOV_PUBLIC*1200.0f) < -550.0f) {
+        c->pos[1] = -550.0f + (gMarioState->_2D_FOV_PUBLIC*1200.0f);
+        c->focus[1] = c->pos[1];
+    }*/
+    if ((gCurrentArea->index == 4)&&(gCurrLevelNum != LEVEL_RR)) {
+        c->pos[0] = 0.0f;
+        c->focus[0] = c->pos[0];
+    }
+
+    if ((gMarioState->action & ACT_GROUP_MASK) == ACT_GROUP_CUTSCENE) {
+        //c->cutscene = 0;
+    }
 }
 
 /**
@@ -2923,7 +3047,8 @@ void update_camera(struct Camera *c) {
 #ifdef ENABLE_VANILLA_CAM_PROCESSING
     camera_course_processing(c);
 #else
-    if (gCurrDemoInput != NULL) camera_course_processing(c);
+    //if (gCurrDemoInput != NULL) camera_course_processing(c);
+    camera_course_processing(c);
 #endif
     sCButtonsPressed = find_c_buttons_pressed(sCButtonsPressed, gPlayer1Controller->buttonPressed, gPlayer1Controller->buttonDown);
 
@@ -2986,6 +3111,10 @@ void update_camera(struct Camera *c) {
 
                 case CAMERA_MODE_8_DIRECTIONS:
                     mode_8_directions_camera(c);
+                    break;
+
+                case CAMERA_MODE_0F:
+                    mode_2d_camera(c);
                     break;
 
                 case CAMERA_MODE_RADIAL:
@@ -5318,7 +5447,7 @@ void check_blocking_area_processing(const u8 *mode) {
     }
 #else
 void check_blocking_area_processing(UNUSED const u8 *mode) {
-    sStatusFlags |= CAM_FLAG_BLOCK_AREA_PROCESSING;
+    sStatusFlags &= ~CAM_FLAG_BLOCK_AREA_PROCESSING;
 #endif
 }
 
@@ -5501,6 +5630,10 @@ void cam_castle_hmc_start_pool_cutscene(struct Camera *c) {
         && (sMarioCamState->action != ACT_SPECIAL_EXIT_AIRBORNE)) {
         start_cutscene(c, CUTSCENE_ENTER_POOL);
     }
+}
+
+void cam_test_volume_2d(struct Camera *c) {
+    print_text(20,20, "mario in box");
 }
 
 /**
@@ -5913,9 +6046,8 @@ struct CameraTrigger sCamRR[] = {
  * to free_roam when Mario is not walking up the tower.
  */
 struct CameraTrigger sCamBOB[] = {
-    {  1, cam_bob_tower, 2468, 2720, -4608, 3263, 1696, 3072, 0 },
-    { -1, cam_bob_default_free_roam, 0, 0, 0, 0, 0, 0, 0 },
-    NULL_TRIGGER
+	{1, cam_test_volume_2d, 28, 100, -37, 8000, 2000, 2000, 0},
+	NULL_TRIGGER
 };
 
 /**
@@ -10350,6 +10482,11 @@ struct Cutscene sCutsceneReadMessage[] = {
     { cutscene_read_message_end, 0 }
 };
 
+//why the fuck is it a cutscene
+struct Cutscene sCutscene2D[] = {
+    { mode_2d_camera, CUTSCENE_LOOP }
+};
+
 /* TODO:
  * The next two arrays are both related to levels, and they look generated.
  * These should be split into their own file.
@@ -10399,26 +10536,26 @@ u8 sDanceCutsceneIndexTable[][4] = {
  * and if the result is non-zero, the camera will zoom out.
  */
 u8 sZoomOutAreaMasks[] = {
-    ZOOMOUT_AREA_MASK(0,0,0,0, 0,0,0,0), // Unused         | Unused
-    ZOOMOUT_AREA_MASK(0,0,0,0, 0,0,0,0), // Unused         | Unused
-    ZOOMOUT_AREA_MASK(0,0,0,0, 1,0,0,0), // BBH            | CCM
-    ZOOMOUT_AREA_MASK(0,0,0,0, 0,0,0,0), // CASTLE_INSIDE  | HMC
-    ZOOMOUT_AREA_MASK(1,0,0,0, 1,0,0,0), // SSL            | BOB
-    ZOOMOUT_AREA_MASK(1,0,0,0, 1,0,0,0), // SL             | WDW
-    ZOOMOUT_AREA_MASK(0,0,0,0, 1,1,0,0), // JRB            | THI
-    ZOOMOUT_AREA_MASK(0,0,0,0, 1,0,0,0), // TTC            | RR
-    ZOOMOUT_AREA_MASK(1,0,0,0, 1,0,0,0), // CASTLE_GROUNDS | BITDW
-    ZOOMOUT_AREA_MASK(0,0,0,0, 1,0,0,0), // VCUTM          | BITFS
-    ZOOMOUT_AREA_MASK(0,0,0,0, 1,0,0,0), // SA             | BITS
-    ZOOMOUT_AREA_MASK(1,0,0,0, 0,0,0,0), // LLL            | DDD
-    ZOOMOUT_AREA_MASK(1,0,0,0, 0,0,0,0), // WF             | ENDING
-    ZOOMOUT_AREA_MASK(0,0,0,0, 0,0,0,0), // COURTYARD      | PSS
-    ZOOMOUT_AREA_MASK(0,0,0,0, 1,0,0,0), // COTMC          | TOTWC
-    ZOOMOUT_AREA_MASK(1,0,0,0, 1,0,0,0), // BOWSER_1       | WMOTR
-    ZOOMOUT_AREA_MASK(0,0,0,0, 1,0,0,0), // Unused         | BOWSER_2
-    ZOOMOUT_AREA_MASK(1,0,0,0, 0,0,0,0), // BOWSER_3       | Unused
-    ZOOMOUT_AREA_MASK(1,0,0,0, 0,0,0,0), // TTM            | Unused
-    ZOOMOUT_AREA_MASK(0,0,0,0, 0,0,0,0), // Unused         | Unused
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 0, 0, 0, 0), // Unused         | Unused
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 0, 0, 0, 0), // Unused         | Unused
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // BBH            | CCM
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 0, 0, 0, 0), // CASTLE_INSIDE  | HMC
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // SSL            | BOB
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // SL             | WDW
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 1, 0, 0), // JRB            | THI
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // TTC            | RR
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // CASTLE_GROUNDS | BITDW
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // VCUTM          | BITFS
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // SA             | BITS
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // LLL            | DDD
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // WF             | ENDING
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 0, 0, 0, 0), // COURTYARD      | PSS
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // COTMC          | TOTWC
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // BOWSER_1       | WMOTR
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // Unused         | BOWSER_2
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // BOWSER_3       | Unused
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // TTM            | Unused
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 0, 0, 0, 0), // Unused         | Unused
 };
 
 STATIC_ASSERT(ARRAY_COUNT(sZoomOutAreaMasks) - 1 == LEVEL_MAX / 2, "Make sure you edit sZoomOutAreaMasks when adding / removing courses.");
@@ -10811,6 +10948,7 @@ void play_cutscene(struct Camera *c) {
         CUTSCENE(CUTSCENE_RACE_DIALOG,          sCutsceneDialog)
         CUTSCENE(CUTSCENE_ENTER_PYRAMID_TOP,    sCutsceneEnterPyramidTop)
         CUTSCENE(CUTSCENE_SSL_PYRAMID_EXPLODE,  sCutscenePyramidTopExplode)
+        CUTSCENE(CUTSCENE_2D,                   sCutscene2D)
     }
 
 #undef CUTSCENE

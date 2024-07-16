@@ -1052,6 +1052,8 @@ s32 play_mode_normal(void) {
 #endif
     }
 
+    if (gCurrLevelNum == LEVEL_BOB) gMarioStates->pos[2] = 0;
+
     initiate_painting_warp();
     initiate_delayed_warp();
 
@@ -1235,6 +1237,11 @@ s32 init_level(void) {
     OSTime first = osGetTime();
 #endif
 
+    gMarioState->_2D = FALSE;
+    if (gCurrLevelNum == LEVEL_BOB) {
+        gMarioState->_2D = TRUE;
+    }
+
     set_play_mode(PLAY_MODE_NORMAL);
 
     sDelayedWarpOp = WARP_OP_NONE;
@@ -1383,6 +1390,7 @@ s32 lvl_set_current_level(UNUSED s16 initOrUpdate, s32 levelNum) {
     sWarpCheckpointActive = FALSE;
     gCurrLevelNum = levelNum;
     gCurrCourseNum = gLevelToCourseNumTable[levelNum - 1];
+	if (gCurrLevelNum == LEVEL_BOB) return 0;
 
     if (gCurrDemoInput != NULL || gCurrCreditsEntry != NULL || gCurrCourseNum == COURSE_NONE) {
         return FALSE;

@@ -460,6 +460,8 @@ struct MarioState {
              s16 ceilYaw;
              s16 wallYaw;
     // -- HackerSM64 MarioState fields end --
+    // 2d mode, would rather not copy rovert wholesale but until i get this working i'd rather not be picky
+             u8 _2D;
 };
 
 #endif // TYPES_H

@@ -437,6 +437,9 @@ void geo_process_master_list(struct GraphNodeMasterList *node) {
     }
 }
 
+f32 _2DFOV;
+f32 _2DTable[] = {0.6f,0.7f,0.9f};
+
 /**
  * Process a perspective projection node.
  */
@@ -466,12 +469,18 @@ void geo_process_perspective(struct GraphNodePerspective *node) {
 #ifdef VERTICAL_CULLING
         node->halfFovVertical = tans(vHalfFov);
 #endif
-
-        // With low fovs, coordinate overflow can occur more easily. This slightly reduces precision only while zoomed in.
+        if(gCurrLevelNum == LEVEL_BOB){
+            _2DFOV = approach_f32_asymptotic(_2DFOV, _2DTable[1], 0.2f);
+            guOrtho(mtx,-600.0f*sAspectRatio*_2DFOV,600.0f*sAspectRatio*_2DFOV,-600.0f*_2DFOV,600.0f*_2DFOV, node->near / WORLD_SCALE, node->far / WORLD_SCALE, 100.0f);
+            gSPPerspNormalize(gDisplayListHead++, 0xFFFF);
+        } else {
+            // With low fovs, coordinate overflow can occur more easily. This slightly reduces precision only while zoomed in.
         f32 scale = node->fov < 28.0f ? remap(MAX(node->fov, 15), 15, 28, 0.5f, 1.0f): 1.0f;
         guPerspective(mtx, &perspNorm, node->fov, sAspectRatio, node->near / WORLD_SCALE, node->far / WORLD_SCALE, scale);
-
         gSPPerspNormalize(gDisplayListHead++, perspNorm);
+        }
+        
+
 
         gSPMatrix(gDisplayListHead++, VIRTUAL_TO_PHYSICAL(mtx), G_MTX_PROJECTION | G_MTX_LOAD | G_MTX_NOPUSH);
 
