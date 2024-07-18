@@ -379,8 +379,8 @@
 #define MODEL_ENEMY_LAKITU                0x54        // enemy_lakitu_geo
 #define MODEL_SPINY_BALL                  0x55        // spiny_ball_geo
 #define MODEL_SPINY                       0x56        // spiny_geo
-#define MODEL_WIGGLER_HEAD                0x57        // wiggler_head_geo
-#define MODEL_WIGGLER_BODY                0x58        // wiggler_body_geo
+//#define MODEL_WIGGLER_HEAD                0x57        // wiggler_head_geo
+//#define MODEL_WIGGLER_BODY                0x58        // wiggler_body_geo
 #define MODEL_BUBBA                       0x59        // bubba_geo
 
 // referenced in macro presets. Unknown usage.
@@ -514,8 +514,8 @@
 #define MODEL_SEAWEED                     0xC1        // seaweed_geo
 #define MODEL_AMP                         0xC2        // dAmpGeo
 #define MODEL_BOBOMB_BUDDY                0xC3        // bobomb_buddy_geo
-// find me
-// find me
+#define MODEL_WIGGLER_HEAD                0xC4        // wiggler_head_geo
+#define MODEL_WIGGLER_BODY                0xC5        // wiggler_body_geo
 // find me
 #define MODEL_SSL_TOX_BOX                 0xC7        // ssl_geo_000630
 #define MODEL_BOWSER_KEY_CUTSCENE         0xC8        // bowser_key_cutscene_geo
