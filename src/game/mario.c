@@ -1269,6 +1269,7 @@ void update_mario_joystick_inputs(struct MarioState *m) {
 void update_mario_geometry_inputs(struct MarioState *m) {
     f32 gasLevel;
     f32 ceilToFloorDist;
+    struct Surface *waterFloor;
 
     f32_find_wall_collision(&m->pos[0], &m->pos[1], &m->pos[2], 60.0f, 50.0f);
     f32_find_wall_collision(&m->pos[0], &m->pos[1], &m->pos[2], 30.0f, 24.0f);
@@ -1286,7 +1287,13 @@ void update_mario_geometry_inputs(struct MarioState *m) {
 
     m->ceilHeight = find_mario_ceil(m->pos, m->floorHeight, &m->ceil);
     gasLevel = find_poison_gas_level(m->pos[0], m->pos[2]);
-    m->waterLevel = find_water_level(m->pos[0], m->pos[2]);
+    m->waterLevel = find_water_level_and_floor(m->pos[0], m->pos[1], m->pos[2], &waterFloor);
+    if (gMarioState->flags & MARIO_ICE_FLOWER) {
+        if (m->floorHeight < m->waterLevel && waterFloor) {
+            m->floorHeight = m->waterLevel;
+            m->floor = waterFloor;
+        }
+    }
 
     if (m->floor != NULL) {
         m->floorYaw = atan2s(m->floor->normal.z, m->floor->normal.x);
@@ -1624,7 +1631,7 @@ void mario_update_hitbox_and_cap_model(struct MarioState *m) {
         bodyState->modelState = MODEL_STATE_NOISE_ALPHA;
     }
 
-    if (flags & (MARIO_METAL_CAP | MARIO_METAL_SHOCK)) {
+    if (flags & (MARIO_METAL_CAP | MARIO_METAL_SHOCK | MARIO_ICE_FLOWER)) {
         bodyState->modelState |= MODEL_STATE_METAL;
     }
 
@@ -1746,6 +1753,13 @@ s32 execute_mario_action(UNUSED struct Object *obj) {
         if (gMarioState->floor == NULL) {
             return ACTIVE_PARTICLE_NONE;
         }
+    if (gMarioState->flags & MARIO_ICE_FLOWER) {
+        if (gMarioState->floorHeight < gMarioState->waterLevel) {
+            gMarioState->floorHeight = gMarioState->waterLevel;
+            gMarioState->floor = &gWaterSurfacePseudoFloor;
+            gMarioState->floor->originOffset = gMarioState->waterLevel;
+        }
+    }
 
         // The function can loop through many action shifts in one frame,
         // which can lead to unexpected sub-frame behavior. Could potentially hang

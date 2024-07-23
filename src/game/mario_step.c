@@ -275,7 +275,7 @@ s32 stationary_ground_step(struct MarioState *m) {
 
 static s32 perform_ground_quarter_step(struct MarioState *m, Vec3f nextPos) {
     struct WallCollisionData lowerWall, upperWall;
-    struct Surface *ceil, *floor;
+    struct Surface *ceil, *floor, *waterFloor;
 
     s16 i;
     s16 wallDYaw;
@@ -287,10 +287,18 @@ static s32 perform_ground_quarter_step(struct MarioState *m, Vec3f nextPos) {
     f32 floorHeight = find_floor(nextPos[0], nextPos[1], nextPos[2], &floor);
     f32 ceilHeight = find_mario_ceil(nextPos, floorHeight, &ceil);
 
-    f32 waterLevel = find_water_level(nextPos[0], nextPos[2]);
+    f32 waterLevel = find_water_level_and_floor(nextPos[0], nextPos[1], nextPos[2], &waterFloor);
 
     if (floor == NULL) {
         return GROUND_STEP_HIT_WALL_STOP_QSTEPS;
+    }
+
+    if (m->flags & MARIO_ICE_FLOWER) {
+        if (floorHeight < waterLevel) {
+            floorHeight = waterLevel;
+            floor = waterFloor;
+            //floor->originOffset = -floorHeight;
+        }
     }
 
     if ((m->action & ACT_FLAG_RIDING_SHELL) && floorHeight < waterLevel) {
@@ -460,7 +468,7 @@ s32 perform_air_quarter_step(struct MarioState *m, Vec3f intendedPos, u32 stepAr
 
     Vec3f nextPos, ledgePos;
     struct WallCollisionData upperWall, lowerWall;
-    struct Surface *ceil, *floor, *ledgeFloor;
+    struct Surface *ceil, *floor, *ledgeFloor, *waterFloor;
     struct Surface *grabbedWall = NULL;
 
     vec3f_copy(nextPos, intendedPos);
@@ -471,7 +479,7 @@ s32 perform_air_quarter_step(struct MarioState *m, Vec3f intendedPos, u32 stepAr
     f32 floorHeight = find_floor(nextPos[0], nextPos[1], nextPos[2], &floor);
     f32 ceilHeight = find_mario_ceil(nextPos, floorHeight, &ceil);
 
-    f32 waterLevel = find_water_level(nextPos[0], nextPos[2]);
+    f32 waterLevel = find_water_level_and_floor(nextPos[0], nextPos[1], nextPos[2], &waterFloor);
 
     //! The water pseudo floor is not referenced when your intended qstep is
     // out of bounds, so it won't detect you as landing.
@@ -484,6 +492,14 @@ s32 perform_air_quarter_step(struct MarioState *m, Vec3f intendedPos, u32 stepAr
 
         m->pos[1] = nextPos[1];
         return AIR_STEP_HIT_WALL;
+    }
+
+    if (m->flags & MARIO_ICE_FLOWER) {
+        if (floorHeight < waterLevel) {
+            floorHeight = waterLevel;
+            floor = waterFloor;
+            //floor->originOffset = -floorHeight;
+        }
     }
 
     if ((m->action & ACT_FLAG_RIDING_SHELL) && floorHeight < waterLevel) {

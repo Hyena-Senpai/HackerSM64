@@ -1,0 +1,18 @@
+extern const GeoLayout bob_area_1_geo[];
+extern const GeoLayout bob_area_1[];
+extern const Collision bob_area_1_collision[];
+extern const MacroObject bob_area_1_macro_objs[];
+extern Lights1 bob_dl_sm64_material_001_lights;
+extern Lights1 bob_dl_water_lights;
+extern u8 bob_dl_Graywater_ia8[];
+extern Vtx bob_dl_Cube_mesh_layer_1_vtx_cull[8];
+extern Vtx bob_dl_Cube_mesh_layer_1_vtx_0[36];
+extern Gfx bob_dl_Cube_mesh_layer_1_tri_0[];
+extern Vtx bob_dl_Cube_mesh_layer_5_vtx_cull[8];
+extern Vtx bob_dl_Cube_mesh_layer_5_vtx_0[4];
+extern Gfx bob_dl_Cube_mesh_layer_5_tri_0[];
+extern Gfx mat_bob_dl_sm64_material_001[];
+extern Gfx mat_bob_dl_water[];
+extern Gfx mat_revert_bob_dl_water[];
+extern Gfx bob_dl_Cube_mesh_layer_1[];
+extern Gfx bob_dl_Cube_mesh_layer_5[];

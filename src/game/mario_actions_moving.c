@@ -678,6 +678,11 @@ void push_or_sidle_wall(struct MarioState *m, Vec3f startPos) {
     if (m->forwardVel > 6.0f) {
         mario_set_forward_vel(m, 6.0f);
     }
+    /*if ((m->wall != NULL) && (m->wall->type == SURFACE_NEW_WATER) && (m->flags & MARIO_ICE_FLOWER)) {
+        if (gIcePlatformWallCount == 0) {
+            spawn_ice_platform_wall(m);            
+        }
+    }*/
     
     if (m->wall != NULL) {
         wallAngle = m->wallYaw;

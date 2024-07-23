@@ -274,3 +274,46 @@ void bhv_vanish_cap_init(void) {
     o->oBuoyancy = 0.9f;
     o->oOpacity = 150;
 }
+
+void bhv_ice_flower_init(void) {
+    o->oGravity = 1.2f;
+    o->oFriction = 0.999f;
+    o->oBuoyancy = 0.9f;
+    o->oOpacity = 150;
+}
+
+void ice_flower_act_0(void) {
+    o->oFaceAngleYaw += o->oForwardVel * 128.0f;
+    s16 collisionFlags = object_step();
+    if (collisionFlags & OBJ_COL_FLAG_GROUNDED) {
+        cap_check_quicksand();
+        if (o->oVelY != 0.0f) {
+            o->oCapDoScaleVertically = TRUE;
+            o->oVelY = 0.0f;
+        }
+    }
+
+    if (o->oCapDoScaleVertically) {
+        cap_scale_vertically();
+    }
+}
+
+void ice_flower_loop(void) {
+    switch (o->oAction) {
+        case CAP_ACT_MOVE:
+            ice_flower_act_0();
+            break;
+
+        default:
+            object_step();
+            cap_sink_quicksand();
+            break;
+    }
+
+    if (o->oTimer > 20) {
+        cur_obj_become_tangible();
+    }
+
+    cap_despawn();
+    cap_set_hitbox();
+}

@@ -6074,4 +6074,11 @@ const BehaviorScript bhvIntroScene[] = {
     END_LOOP(),
 };
 
-
+const BehaviorScript bhvIceFlower[] = {
+    BEGIN(OBJ_LIST_LEVEL),
+    OR_LONG(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE | OBJ_FLAG_SILHOUETTE)),
+    CALL_NATIVE(bhv_ice_flower_init),
+    BEGIN_LOOP(),
+        CALL_NATIVE(ice_flower_loop),
+    END_LOOP(),
+};

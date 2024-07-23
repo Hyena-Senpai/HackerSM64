@@ -34,6 +34,7 @@ struct ExclamationBoxContents sExclamationBoxContents[] = {
     [EXCLAMATION_BOX_BP_STAR_4          ] = { MODEL_STAR,             bhvSpawnedStar,           3 },
     [EXCLAMATION_BOX_BP_STAR_5          ] = { MODEL_STAR,             bhvSpawnedStar,           4 },
     [EXCLAMATION_BOX_BP_STAR_6          ] = { MODEL_STAR,             bhvSpawnedStar,           5 },
+    [EXCLAMATION_BOX_BP_ICE_FLOWER      ] = { MODEL_BLUE_COIN,        bhvIceFlower,             0 },
 };
 
 void bhv_rotating_exclamation_mark_loop(void) {

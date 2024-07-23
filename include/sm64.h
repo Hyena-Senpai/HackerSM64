@@ -119,6 +119,7 @@ enum MarioInput {
     INPUT_B_PRESSED              = /* 0x2000 */ (1 << 13),
     INPUT_Z_DOWN                 = /* 0x4000 */ (1 << 14),
     INPUT_Z_PRESSED              = /* 0x8000 */ (1 << 15),
+    INPUT_A_RELEASED             = /* 0x10000*/ (1 << 16),
 };
 enum GroundStep {
     GROUND_STEP_LEFT_GROUND,
@@ -195,8 +196,8 @@ enum MarioFlags {
     MARIO_METAL_SHOCK         = /* 0x00000040 */ (1 <<  6),
     MARIO_TELEPORTING         = /* 0x00000080 */ (1 <<  7),
     MARIO_JUMPING             = /* 0x00000100 */ (1 <<  8),
-    MARIO_UNUSED_9            = /* 0x00000200 */ (1 <<  9),
-    MARIO_UNUSED_10           = /* 0x00000400 */ (1 << 10),
+    MARIO_CLOUD_FLOWER        = /* 0x00000200 */ (1 <<  9),
+    MARIO_ICE_FLOWER          = /* 0x00000400 */ (1 << 10),
     MARIO_UNUSED_11           = /* 0x00000800 */ (1 << 11),
     MARIO_UNUSED_12           = /* 0x00001000 */ (1 << 12),
     MARIO_NO_PURPLE_SWITCH    = /* 0x00002000 */ (1 << 13),
@@ -218,7 +219,7 @@ enum MarioFlags {
     MARIO_UNUSED_29           = /* 0x20000000 */ (1 << 29),
     MARIO_AIR_HIT_WALL        = /* 0x40000000 */ (1 << 30),
     MARIO_PUSHING             = /* 0x80000000 */ (1 << 31),
-    MARIO_SPECIAL_CAPS        = (MARIO_VANISH_CAP | MARIO_METAL_CAP | MARIO_WING_CAP),
+    MARIO_SPECIAL_CAPS        = (MARIO_VANISH_CAP | MARIO_METAL_CAP | MARIO_WING_CAP | MARIO_CLOUD_FLOWER | MARIO_ICE_FLOWER),
     MARIO_CAPS                = (MARIO_NORMAL_CAP | MARIO_SPECIAL_CAPS),
 };
 

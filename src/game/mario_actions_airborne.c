@@ -100,6 +100,13 @@ s32 check_kick_or_dive_in_air(struct MarioState *m) {
     return FALSE;
 }
 
+s32 check_cloud_flower(struct MarioState *m){
+    if(m->input & INPUT_A_PRESSED){
+        return set_mario_action(m, ACT_SPECIAL_TRIPLE_JUMP, 0);
+    }
+    return FALSE;
+}
+
 #ifdef NO_GETTING_BURIED
 s32 should_get_stuck_in_ground(UNUSED struct MarioState *m) {
     return FALSE;
@@ -432,6 +439,10 @@ s32 act_jump(struct MarioState *m) {
     if (check_kick_or_dive_in_air(m)) {
         return TRUE;
     }
+
+    /*if (check_cloud_flower(m)){
+        return TRUE;
+    }*/
 
     if (m->input & INPUT_Z_PRESSED) {
         return set_mario_action(m, ACT_GROUND_POUND, 0);

@@ -80,6 +80,8 @@ static s32 find_wall_collisions_from_list(struct SurfaceNode *surfaceNode, struc
         } else {
             // Ignore camera only surfaces.
             if (type == SURFACE_CAMERA_BOUNDARY) continue;
+            if ((type == SURFACE_NEW_WATER) && (!(gMarioState->flags & MARIO_ICE_FLOWER))) continue;
+
 
             // If an object can pass through a vanish cap wall, pass through.
             if (type == SURFACE_VANISH_CAP_WALLS && o != NULL) {
